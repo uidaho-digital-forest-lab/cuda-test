@@ -1,0 +1,75 @@
+Bootstrap: docker
+From: nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+
+%labels
+    Author flathers@uidaho.edu
+    Version 1.0
+    Description Simple CUDA test environment with PyTorch via Juice GPU-over-IP
+
+%post
+    # Force IPv4 for apt to avoid IPv6 connectivity issues
+    echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4
+    echo 'Acquire::http::Timeout "30";' >> /etc/apt/apt.conf.d/99force-ipv4
+    echo 'Acquire::Retries "3";' >> /etc/apt/apt.conf.d/99force-ipv4
+
+    # Base system packages (wget and ca-certificates only — that's all we need)
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get -o Acquire::ForceIPv4=true update -y
+    apt-get -o Acquire::ForceIPv4=true install -y \
+        wget \
+        ca-certificates \
+        libatomic1 \
+        libnuma1
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install Miniconda
+    wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh
+    bash /tmp/miniconda.sh -b -p /opt/conda
+    rm /tmp/miniconda.sh
+
+    # Add conda to path for the rest of %post
+    export PATH="/opt/conda/bin:$PATH"
+
+    # Accept Anaconda ToS and configure conda to use conda-forge
+    /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+    /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+    /opt/conda/bin/conda config --add channels conda-forge
+    /opt/conda/bin/conda config --set channel_priority strict
+
+    # Create the conda environment with PyTorch + CUDA 12.4
+    conda create -y -n cuda-test python=3.11
+    /opt/conda/envs/cuda-test/bin/pip install \
+        --extra-index-url https://download.pytorch.org/whl/cu124 \
+        torch==2.6.0+cu124 \
+        torchvision==0.21.0+cu124 \
+        torchaudio==2.6.0+cu124
+
+    conda clean -afy
+
+    # Copy the test script into the image
+    mkdir -p /app
+    cp /cuda_test.py /app/cuda_test.py
+
+%files
+    cuda_test.py /cuda_test.py
+
+%environment
+    export PATH="/opt/conda/envs/cuda-test/bin:/opt/conda/bin:$PATH"
+    export CONDA_DEFAULT_ENV=cuda-test
+
+%runscript
+    exec python /app/cuda_test.py "$@"
+
+%help
+    CUDA test container using PyTorch 2.6.0 + CUDA 12.4.
+
+    Run the CUDA test directly:
+        apptainer run --nv cuda_test.sif
+
+    Or via Juice (from outside the container):
+        juice run apptainer run --nv cuda_test.sif
+
+    Or drop into a shell:
+        apptainer shell --nv cuda_test.sif
+

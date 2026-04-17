@@ -1,0 +1,32 @@
+# Apptainer images
+*.sif
+
+# Juice installation directory
+juice/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Conda environments
+.conda/
+envs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
