@@ -86,7 +86,7 @@ conda activate cuda-test
 & 'C:\Program Files\Juice GPU\juice.exe' login
 ```
 
-3. View the juice pool list. The Personal Pool contains one juice agent, linuxviz (172.28.53.25):
+3. View the juice pool list. The Personal Pool contains one juice agent with a single GPU:
 ```
 & 'C:\Program Files\Juice GPU\juice.exe' pool list
 ```
